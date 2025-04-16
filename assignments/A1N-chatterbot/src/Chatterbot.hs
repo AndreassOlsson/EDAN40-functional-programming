@@ -73,7 +73,7 @@ rulesApply :: [(Pattern String, Template String)] -> Phrase -> Phrase
 -- 2. Reflect the match (convert between 1st and 2nd person)
 -- 3. Substitute the reflected match in the target pattern
 -- Use transformationsApply with reflect as the transformation function
-rulesApply rules = try (transformationsApply reflect rules)
+rulesApply rules phrase = try (transformationsApply reflect rules) phrase
 
 reflect :: Phrase -> Phrase
 {- TO BE WRITTEN -}
@@ -81,7 +81,9 @@ reflect :: Phrase -> Phrase
 -- For example "i will see my reflection" -> "you will see your reflection"
 -- Use the reflections list to map words to their reflections
 -- If a word isn't in the reflections list, keep it unchanged
-reflect = map (\w -> maybe w id (lookup w reflections))
+reflect phrase = map reflectWord phrase
+  where
+    reflectWord w = maybe w id (lookup w reflections)
 
 -- lambda function eq to: f w = maybe w id (lookup w reflections)
 reflections =
@@ -122,7 +124,8 @@ ruleCompile :: (String, [String]) -> Rule
 -- The string pattern should be converted to a Pattern using stringToPattern or starPattern
 -- Each template string should be converted to a Template
 -- Patterns need to be in lowercase to match prepared input
-ruleCompile = Rule . map2 (starPattern . map toLower, map starPattern)
+ruleCompile (patStr, tmplStrs) =
+  Rule (starPattern (map toLower patStr), map starPattern tmplStrs)
 
 --------------------------------------
 -- We can make a pattern from a list of elements
@@ -134,13 +137,14 @@ mkPattern :: Eq a => a -> [a] -> Pattern a
 -- Replace any occurrence of the wildcard element with Wildcard
 -- All other elements should be wrapped as Item
 -- Example: mkPattern '*' "Hi *!" = Pattern [Item 'H', Item 'i', Item ' ', Wildcard, Item '!']
-mkPattern wc =
+mkPattern wc xs =
   Pattern
-    . map
-        (\x ->
-           if x == wc
-             then Wildcard
-             else Item x)
+    (map
+       (\x ->
+          if x == wc
+            then Wildcard
+            else Item x)
+       xs)
 
 stringToPattern :: String -> String -> Pattern String
 stringToPattern wc = mkPattern wc . words
@@ -175,8 +179,8 @@ reductionsApply :: [(Pattern String, Pattern String)] -> Phrase -> Phrase
 -- Example: "I am very very tired" -> "I am tired"
 -- Use transformationsApply to apply the reductions
 -- The 'fix' function from Utilities.hs will be useful here to keep applying until no change
-reductionsApply reductionRules =
-  fix (try (transformationsApply id reductionRules))
+reductionsApply reductionRules phrase =
+  fix (try (transformationsApply id reductionRules)) phrase
 
 -------------------------------------------------------
 -- Match and substitute
@@ -248,7 +252,9 @@ transformationApply ::
 -- Return Nothing if the match fails
 -- The transformation function is typically 'reflect'
 transformationApply transform input (pattern, template) =
-  mmap (substitute template . transform) (match pattern input)
+  case match pattern input of
+    Nothing      -> Nothing
+    Just matched -> Just (substitute template (transform matched))
 
 -- Applying a list of patterns until one succeeds
 transformationsApply ::
@@ -259,8 +265,6 @@ transformationsApply ::
 -- Return Nothing if all transformations fail
 -- Note the parameter order differs from transformationApply
 -- Typically the transformation function is 'reflect'
-transformationsApply transform rules input =
-  foldr
-    (\r acc -> orElse (transformationApply transform input r) acc)
-    Nothing
-    rules
+transformationsApply transform rules input = foldr step Nothing rules
+  where
+    step r acc = orElse (transformationApply transform input r) acc
