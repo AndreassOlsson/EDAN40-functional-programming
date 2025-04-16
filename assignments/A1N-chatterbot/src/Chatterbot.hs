@@ -1,13 +1,12 @@
 module Chatterbot where
 
+import           Control.Monad (mapM)
 import           Data.Char
 import           Data.Maybe
 import           System.Random
 import           Utilities
 
 -- If you're not sure what this is, it's ok.
-import           Control.Monad (mapM)
-
 -- A pattern is a list of things
 -- Where we have either a value or a wildcard
 data PatternElem a
@@ -74,7 +73,7 @@ rulesApply :: [(Pattern String, Template String)] -> Phrase -> Phrase
 -- 2. Reflect the match (convert between 1st and 2nd person)
 -- 3. Substitute the reflected match in the target pattern
 -- Use transformationsApply with reflect as the transformation function
-rulesApply = undefined
+rulesApply rules = try (transformationsApply reflect rules)
 
 reflect :: Phrase -> Phrase
 {- TO BE WRITTEN -}
@@ -82,8 +81,9 @@ reflect :: Phrase -> Phrase
 -- For example "i will see my reflection" -> "you will see your reflection"
 -- Use the reflections list to map words to their reflections
 -- If a word isn't in the reflections list, keep it unchanged
-reflect = undefined
+reflect = map (\w -> maybe w id (lookup w reflections))
 
+-- lambda function eq to: f w = maybe w id (lookup w reflections)
 reflections =
   [ ("am", "are")
   , ("was", "were")
@@ -122,7 +122,7 @@ ruleCompile :: (String, [String]) -> Rule
 -- The string pattern should be converted to a Pattern using stringToPattern or starPattern
 -- Each template string should be converted to a Template
 -- Patterns need to be in lowercase to match prepared input
-ruleCompile = undefined
+ruleCompile = Rule . map2 (starPattern . map toLower, map starPattern)
 
 --------------------------------------
 -- We can make a pattern from a list of elements
@@ -134,7 +134,13 @@ mkPattern :: Eq a => a -> [a] -> Pattern a
 -- Replace any occurrence of the wildcard element with Wildcard
 -- All other elements should be wrapped as Item
 -- Example: mkPattern '*' "Hi *!" = Pattern [Item 'H', Item 'i', Item ' ', Wildcard, Item '!']
-mkPattern = undefined
+mkPattern wc =
+  Pattern
+    . map
+        (\x ->
+           if x == wc
+             then Wildcard
+             else Item x)
 
 stringToPattern :: String -> String -> Pattern String
 stringToPattern wc = mkPattern wc . words
@@ -169,7 +175,8 @@ reductionsApply :: [(Pattern String, Pattern String)] -> Phrase -> Phrase
 -- Example: "I am very very tired" -> "I am tired"
 -- Use transformationsApply to apply the reductions
 -- The 'fix' function from Utilities.hs will be useful here to keep applying until no change
-reductionsApply = undefined
+reductionsApply reductionRules =
+  fix (try (transformationsApply id reductionRules))
 
 -------------------------------------------------------
 -- Match and substitute
@@ -180,7 +187,10 @@ substitute :: Eq a => Template a -> [a] -> [a]
 -- Replace each wildcard in the template with the provided list
 -- For example: substitute (mkPattern 'x' "3*cos(x) + 4 - x") "5.37" = "3*cos(5.37) + 4 - 5.37"
 -- Need to traverse the template and replace Wildcard elements with the match
-substitute = undefined
+substitute (Pattern pel) s = concatMap substituteElem pel
+  where
+    substituteElem (Item x) = [x]
+    substituteElem Wildcard = s
 
 -- Tries to match two lists. If they match, the result consists of the sublist
 -- bound to the wildcard in the pattern list.
@@ -192,7 +202,14 @@ match :: Eq a => Pattern a -> [a] -> Maybe [a]
 -- If they match and a wildcard was found, return Just [extracted_match]
 -- For multiple wildcards, only return the match of the first wildcard
 -- Uses singleWildcardMatch and longerWildcardMatch for patterns with wildcards
-match = undefined
+match (Pattern []) [] = Just []
+match (Pattern []) (_:_) = Nothing
+match (Pattern (_:_)) [] = Nothing
+match (Pattern (Item p:ps)) (x:xs)
+  | p == x = match (Pattern ps) xs
+  | otherwise = Nothing
+match p@(Pattern (Wildcard:_)) s =
+  orElse (singleWildcardMatch p s) (longerWildcardMatch p s)
 
 -- Helper function to match
 singleWildcardMatch, longerWildcardMatch ::
@@ -201,6 +218,7 @@ singleWildcardMatch (Pattern (Wildcard:ps)) (x:xs) =
   case match (Pattern ps) xs of
     Nothing -> Nothing
     Just _  -> Just [x]
+singleWildcardMatch _ _ = Nothing -- Should not happen if called from match
 
 {- TO BE WRITTEN -}
 -- Helper function for matching wildcards that span multiple items
@@ -208,7 +226,9 @@ singleWildcardMatch (Pattern (Wildcard:ps)) (x:xs) =
 -- 1. It doesn't consume the first wildcard of the pattern
 -- 2. It extracts the match and prepends the current element to it
 -- Tries to match the rest of the pattern with different lengths of matches for the wildcard
-longerWildcardMatch = undefined
+longerWildcardMatch p@(Pattern (Wildcard:_)) (x:xs) = mmap (x :) (match p xs)
+longerWildcardMatch _ []                            = Nothing -- Cannot match anything if list is empty
+longerWildcardMatch (Pattern (Item _:_)) _          = Nothing -- Should not be called like this
 
 -------------------------------------------------------
 -- Applying patterns transformations
@@ -227,7 +247,8 @@ transformationApply ::
 -- 3. Substitute the transformed match into the template
 -- Return Nothing if the match fails
 -- The transformation function is typically 'reflect'
-transformationApply = undefined
+transformationApply transform input (pattern, template) =
+  mmap (substitute template . transform) (match pattern input)
 
 -- Applying a list of patterns until one succeeds
 transformationsApply ::
@@ -238,4 +259,8 @@ transformationsApply ::
 -- Return Nothing if all transformations fail
 -- Note the parameter order differs from transformationApply
 -- Typically the transformation function is 'reflect'
-transformationsApply = undefined
+transformationsApply transform rules input =
+  foldr
+    (\r acc -> orElse (transformationApply transform input r) acc)
+    Nothing
+    rules
