@@ -1,4 +1,4 @@
-import           Chatterbot
+import           ChatterbotNikolai
 
 main = chatterbot "Eliza" eliza
 

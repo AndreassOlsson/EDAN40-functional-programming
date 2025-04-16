@@ -15,6 +15,9 @@ data PatternElem a
   | Item a
   deriving (Eq, Show)
 
+-- describe :: PatternElem a -> String
+-- describe Wildcard   = "This is a wildcard."
+-- describe (Item _)   = "This is an item."
 -- A pattern is a list of pattern elements
 newtype Pattern a =
   Pattern [PatternElem a]
@@ -57,14 +60,28 @@ stateOfMind b = fmap rulesApply (mapM makePair b)
 -- at random, and that's our bot
 makePair :: Rule -> IO (Pattern String, Template String)
 {- TO BE WRITTEN -}
-makePair = undefined
+-- Takes a rule (pattern + list of templates) and produces a tuple (pattern, template)
+-- Uses randomRIO to select a random template from the list of templates
+-- The random selection is why this function returns an IO type
+makePair (Rule (pattern, templates)) = do
+  i <- randomRIO (0, length templates - 1)
+  return (pattern, templates !! i)
 
 rulesApply :: [(Pattern String, Template String)] -> Phrase -> Phrase
 {- TO BE WRITTEN -}
+-- Transforms a phrase using pattern transformations:
+-- 1. Match the phrase with a pattern
+-- 2. Reflect the match (convert between 1st and 2nd person)
+-- 3. Substitute the reflected match in the target pattern
+-- Use transformationsApply with reflect as the transformation function
 rulesApply = undefined
 
 reflect :: Phrase -> Phrase
 {- TO BE WRITTEN -}
+-- Replace each word in the phrase with its corresponding reflection
+-- For example "i will see my reflection" -> "you will see your reflection"
+-- Use the reflections list to map words to their reflections
+-- If a word isn't in the reflections list, keep it unchanged
 reflect = undefined
 
 reflections =
@@ -101,6 +118,10 @@ rulesCompile = map ruleCompile
 
 ruleCompile :: (String, [String]) -> Rule
 {- TO BE WRITTEN -}
+-- Convert a tuple of (string pattern, list of string templates) into a Rule
+-- The string pattern should be converted to a Pattern using stringToPattern or starPattern
+-- Each template string should be converted to a Template
+-- Patterns need to be in lowercase to match prepared input
 ruleCompile = undefined
 
 --------------------------------------
@@ -109,6 +130,10 @@ ruleCompile = undefined
 -- mkPattern '*' "Hi *!" => [Item 'H', Item 'i', Wildcard, Item '!']
 mkPattern :: Eq a => a -> [a] -> Pattern a
 {- TO BE WRITTEN -}
+-- Make a pattern from a wildcard element and a list
+-- Replace any occurrence of the wildcard element with Wildcard
+-- All other elements should be wrapped as Item
+-- Example: mkPattern '*' "Hi *!" = Pattern [Item 'H', Item 'i', Item ' ', Wildcard, Item '!']
 mkPattern = undefined
 
 stringToPattern :: String -> String -> Pattern String
@@ -139,6 +164,11 @@ reduce = reductionsApply reductions
 
 reductionsApply :: [(Pattern String, Pattern String)] -> Phrase -> Phrase
 {- TO BE WRITTEN -}
+-- Apply reductions to simplify a phrase
+-- Keep applying reductions until the phrase doesn't change anymore
+-- Example: "I am very very tired" -> "I am tired"
+-- Use transformationsApply to apply the reductions
+-- The 'fix' function from Utilities.hs will be useful here to keep applying until no change
 reductionsApply = undefined
 
 -------------------------------------------------------
@@ -147,12 +177,21 @@ reductionsApply = undefined
 -- Replaces a wildcard in a template with the list given as the third argument
 substitute :: Eq a => Template a -> [a] -> [a]
 {- TO BE WRITTEN -}
+-- Replace each wildcard in the template with the provided list
+-- For example: substitute (mkPattern 'x' "3*cos(x) + 4 - x") "5.37" = "3*cos(5.37) + 4 - 5.37"
+-- Need to traverse the template and replace Wildcard elements with the match
 substitute = undefined
 
 -- Tries to match two lists. If they match, the result consists of the sublist
 -- bound to the wildcard in the pattern list.
 match :: Eq a => Pattern a -> [a] -> Maybe [a]
 {- TO BE WRITTEN -}
+-- Try to match a pattern with a list
+-- If they don't match, return Nothing
+-- If they match but no wildcard was found, return Just []
+-- If they match and a wildcard was found, return Just [extracted_match]
+-- For multiple wildcards, only return the match of the first wildcard
+-- Uses singleWildcardMatch and longerWildcardMatch for patterns with wildcards
 match = undefined
 
 -- Helper function to match
@@ -164,6 +203,11 @@ singleWildcardMatch (Pattern (Wildcard:ps)) (x:xs) =
     Just _  -> Just [x]
 
 {- TO BE WRITTEN -}
+-- Helper function for matching wildcards that span multiple items
+-- Similar to singleWildcardMatch but:
+-- 1. It doesn't consume the first wildcard of the pattern
+-- 2. It extracts the match and prepends the current element to it
+-- Tries to match the rest of the pattern with different lengths of matches for the wildcard
 longerWildcardMatch = undefined
 
 -------------------------------------------------------
@@ -177,10 +221,21 @@ matchAndTransform transform pat = (mmap transform) . (match pat)
 transformationApply ::
      Eq a => ([a] -> [a]) -> [a] -> (Pattern a, Template a) -> Maybe [a]
 {- TO BE WRITTEN -}
+-- Apply a transformation to input text:
+-- 1. Match the input with the pattern
+-- 2. Apply the provided function to the match
+-- 3. Substitute the transformed match into the template
+-- Return Nothing if the match fails
+-- The transformation function is typically 'reflect'
 transformationApply = undefined
 
 -- Applying a list of patterns until one succeeds
 transformationsApply ::
      Eq a => ([a] -> [a]) -> [(Pattern a, Template a)] -> [a] -> Maybe [a]
 {- TO BE WRITTEN -}
+-- Try each transformation in the list until one succeeds
+-- Apply the provided function to the extracted match
+-- Return Nothing if all transformations fail
+-- Note the parameter order differs from transformationApply
+-- Typically the transformation function is 'reflect'
 transformationsApply = undefined
