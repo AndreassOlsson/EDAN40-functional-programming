@@ -1,4 +1,4 @@
-module Memoization where
+module MemoizationA where
 
 -- This is an assignment where we try to memoize functions
 -- To speed up computations.
@@ -7,9 +7,11 @@ import           Data.Maybe (fromJust)
 -- The problem
 -- If we write a recursive function, it may be slow
 fibo :: Int -> Int
-fibo 0 = 0
-fibo 1 = 1
-fibo n = fibo (n - 1) + fibo (n - 2)
+{- TO BE WRITTEN -}
+fibo n
+  | n == 0 = 0
+  | n == 1 = 1
+  | otherwise = fibo (n - 1) + fibo (n - 2)
 
 -- In GHCI, do,
 -- > :set +s
@@ -56,33 +58,31 @@ runFast = fastFibo1 30
 -- We can make another cache, that works with keys and values
 -- We pass the function and the domain of the keys as an argument
 listCache :: [a] -> (a -> b) -> [(a, b)]
--- För varje element x i listan som skickas in som argument,
--- gör vi en tuple (x, f x) där f är en funktion t.ex fibo.
--- Sedan returnerar vi listan med tuplar.
+{- TO BE WRITTEN -}
 listCache domain f = map (\x -> (x, f x)) domain
 
 -- We create a function which looks up the
 -- result in the cache
 -- and use fromJust to get an error if the cache misses.
-listLookup :: (Eq a) => [(a, b)] -> a -> b
--- Vi använder den inbyggda lookup funktionen för att hitta
--- nyckeln a i den cachade listan och returnerar värdet som är kopplat till nyckeln
+listLookup :: Eq a => [(a, b)] -> a -> b
+{- TO BE WRITTEN -}
 listLookup cache value = fromJust (lookup value cache)
 
 -- Create the cache for all integers...
 -- We use a 'fast fibonacci function' even if we haven't defined it yet!
 fibCache :: [(Int, Int)]
+{- TO BE WRITTEN -}
 fibCache = listCache [0 ..] fastFibo2
 
 -- And the fast function looks in the cache!
 fastFibo2 :: Int -> Int
+{- TO BE WRITTEN -}
 fastFibo2 0 = 0
 fastFibo2 1 = 1
 fastFibo2 n =
   let fib = listLookup fibCache
    in fib (n - 1) + fib (n - 2)
 
--- Pause:
 -- We make the solution in two parts:
 -- 1. We have a cache that uses a 'fast function' we don't have yet (but we know it's type!)
 -- 2. We have a fast function that looks for the result in the cache
@@ -92,7 +92,7 @@ fastFibo2 n =
 -- And looking at the plots.
 -- Now, for something cool
 -- What if we make a function that creates the cache, and immediately looks in it?
-memoizeWithList :: (Eq a) => [a] -> (a -> b) -> (a -> b)
+memoizeWithList :: Eq a => [a] -> (a -> b) -> (a -> b)
 memoizeWithList domain = listLookup . listCache domain
 
 -- Maybe we can use it to memoize the old fibo function?
@@ -111,16 +111,16 @@ testMemoize n =
 -- Here is Fibonacci in open recursion
 -- This function can do other things than compute fibonacci, but
 -- It isn't really recursive anymore
--- And it's easy to implement fibonacci again: (openFibo fibo) does that.
-openFibo :: (Int -> Int) -> Int -> Int
-openFibo _ 0 = 0
-openFibo _ 1 = 1
-openFibo f n = f (n - 1) + f (n - 2)
+-- And it's easy to implement fibonacci again: (openFib fibo) does that.
+openFib :: (Int -> Int) -> Int -> Int
+{- TO BE WRITTEN -}
+openFib f n = undefined
 
--- We use openFibo to create a cached function, and make sure
+-- We use openFib to create a cached function, and make sure
 -- The recursive calls call the fast version!
 fastFibo3 :: Int -> Int
-fastFibo3 = memoizeWithList [0 ..] (openFibo fastFibo3)
+{- TO BE WRITTEN -}
+fastFibo3 = undefined
 
 -- The memoize function creates the cache and looks in it immediately
 -- And because of Lazy evaluation, we get a function that takes a slow
@@ -132,16 +132,7 @@ dropLast l = take (length l - 1) l
 
 -- Slow version
 lps :: String -> String
-lps [] = []
-lps [x] = [x]
-lps (x:xs)
-  | x == last xs = x : lps (init xs) ++ [x]
-  | otherwise = longerOf (lps (x : dropLast xs)) (lps xs)
-  where
-    longerOf a b =
-      if length a >= length b
-        then a
-        else b
+lps s = undefined
 
 -- CACHES FOR LISTS OF THINGS
 -- If we want caches for lists, it's more complicated...
@@ -157,12 +148,9 @@ data Trie node edge =
   deriving (Show)
 
 -- First, looking for a list in a trie...
-trieLookup :: (Eq e) => Trie a e -> [e] -> a
-trieLookup (Trie node _) [] = node
-trieLookup (Trie _ edgess) (e:es) =
-  case lookup e edgess of
-    Just subTree -> trieLookup subTree es
-    Nothing      -> error "Edge not found"
+trieLookup :: Eq e => Trie a e -> [e] -> a
+{- TO BE WRITTEN -}
+trieLookup t l = undefined
 
 -- Get a subset of a trie, with limited depth
 -- (Provided: Useful for debugging)
@@ -173,16 +161,16 @@ limitTrie n (Trie v edges) = Trie v [(l, limitTrie (n - 1) t) | (l, t) <- edges]
 -- Map a function over all values in the trie
 -- Edge labels stay the same.
 mapTrie :: (a -> b) -> Trie a e -> Trie b e
-mapTrie f (Trie node edges) = Trie (f node) (map mapEdge edges)
-  where
-    mapEdge (label, subTree) = (label, mapTrie f subTree)
+{- TO BE WRITTEN -}
+mapTrie f (Trie v cs) = undefined
 
 -- To build an infinite trie, we start from the root
 -- The root starts with the empty list...
 -- And from that, we have a number of edges
 -- The domain 'dom' defines how many edges we have per node
 rootTrie :: [a] -> Trie [a] a
-rootTrie domain = Trie [] (edges domain [])
+{- TO BE WRITTEN -}
+rootTrie domain = undefined
 
 -- How do we create the edges?
 -- We look at the domain,
@@ -192,7 +180,8 @@ rootTrie domain = Trie [] (edges domain [])
 -- the domain, the current label
 -- and the current node
 edges :: [a] -> [a] -> [(a, Trie [a] a)]
-edges domain currentNode = [(c, subtree domain c currentNode) | c <- domain]
+{- TO BE WRITTEN -}
+edges domain currentNode = undefined
 
 -- How do we build the subtree?
 -- We use the label we just followed
@@ -200,15 +189,15 @@ edges domain currentNode = [(c, subtree domain c currentNode) | c <- domain]
 -- And each child creates more edges!
 -- (using the edges function)
 subtree :: [a] -> a -> [a] -> Trie [a] a
-subtree domain label parent =
-  let nextNode = parent ++ [label]
-   in Trie nextNode (edges domain nextNode)
+{- TO BE WRITTEN -}
+subtree domain label parent = undefined
 
 -- Important: the trie is infinite because edges calls subtree, and subtree calls edges.
 -- trieCache builds a cache for a function
 -- provided with a domain (for the list elements)
 trieCache :: [e] -> ([e] -> b) -> Trie b e
-trieCache domain function = mapTrie function (rootTrie domain)
+{- TO BE WRITTEN -}
+trieCache domain function = undefined
 
 {--
 You can inspect the cache with GHCI!
@@ -256,24 +245,12 @@ s1 = "bananrepubliksinvasionsarmestabsadjutant"
 
 s2 = "kontrabasfiolfodralmakarmästarlärling"
 
-openLPS :: (String -> String) -> String -> String
-openLPS _ [] = [] -- Empty string case
-openLPS _ [x] = [x] -- Single character case
-openLPS f (x:xs)
-  | x == last xs = x : f (init xs) ++ [x] -- First and last match
-  | otherwise = longerOf (f (x : dropLast xs)) (f xs) -- Try removing first or last
-  where
-    longerOf a b =
-      if length a >= length b
-        then a
-        else b -- look at 'lps' for inspiration
+openLPS :: (String -> String) -> (String -> String)
+openLPS s = undefined -- look at 'lps' for inspiration
 
 -- Fast!
 fastLPS :: String -> String
-fastLPS = f
-  where
-    f = trieLookup lpsCache
-    lpsCache = trieCache ['a' .. 'z'] (openLPS f)
+fastLPS s = undefined
 -- So, what were the tricks?
 -- The first one is to build an infinite data-structure, to memoize the function
 -- And then your function looks in the cache for the answer!
