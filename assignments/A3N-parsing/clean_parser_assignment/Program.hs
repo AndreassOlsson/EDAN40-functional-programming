@@ -34,4 +34,4 @@ toString (Program stmts) = concatMap Statement.toString stmts
 
 -- Execute the program with input values
 exec :: T -> [Integer] -> [Integer]
-exec (Program stmts) input = Statement.exec stmts Dictionary.empty input
+exec (Program stmts) = Statement.exec stmts Dictionary.empty
