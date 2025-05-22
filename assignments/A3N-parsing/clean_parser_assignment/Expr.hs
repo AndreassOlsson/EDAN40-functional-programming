@@ -1,8 +1,15 @@
-module Expr (Expr, T, parse, fromString, value, toString) where
+module Expr
+  ( Expr
+  , T
+  , parse
+  , fromString
+  , value
+  , toString
+  ) where
 
-import Dictionary qualified
-import Parser hiding (T, fromString)
-import Prelude hiding (fail, return)
+import qualified Dictionary
+import           Parser     hiding (T, fromString)
+import           Prelude    hiding (fail, return)
 
 -- | Abstract syntax for expressions, with exponentiation
 data Expr
@@ -22,20 +29,13 @@ var, num, factor, power, term, expr :: Parser Expr
 term', expr' :: Expr -> Parser Expr
 -- variable and numeric literal
 var = word >-> Var
+
 num = number >-> Num
 
 -- constructors for multiplication/division and addition/subtraction
-mulOp =
-  lit '*'
-    >-> const Mul
-    ! lit '/'
-    >-> const Div
+mulOp = lit '*' >-> const Mul ! lit '/' >-> const Div
 
-addOp =
-  lit '+'
-    >-> const Add
-    ! lit '-'
-    >-> const Sub
+addOp = lit '+' >-> const Add ! lit '-' >-> const Sub
 
 powOp = lit '^' >-> const Pow
 
@@ -62,11 +62,14 @@ expr = term #> expr'
 
 -- | Show with minimal parentheses
 parens :: Bool -> String -> String
-parens cond str = if cond then "(" ++ str ++ ")" else str
+parens cond str =
+  if cond
+    then "(" ++ str ++ ")"
+    else str
 
 shw :: Int -> Expr -> String
-shw prec (Num n) = show n
-shw prec (Var v) = v
+shw prec (Num n)   = show n
+shw prec (Var v)   = v
 shw prec (Add a b) = parens (prec > 5) $ shw 5 a ++ "+" ++ shw 5 b
 shw prec (Sub a b) = parens (prec > 5) $ shw 5 a ++ "-" ++ shw 6 b
 shw prec (Mul a b) = parens (prec > 6) $ shw 6 a ++ "*" ++ shw 6 b
@@ -78,7 +81,7 @@ value :: Expr -> Dictionary.T String Integer -> Integer
 value (Num n) _ = n
 value (Var x) dict =
   case Dictionary.lookup x dict of
-    Just v -> v
+    Just v  -> v
     Nothing -> error ("variable " ++ x ++ " not in dictionary")
 value (Add a b) d = value a d + value b d
 value (Sub a b) d = value a d - value b d
@@ -101,7 +104,8 @@ instance Parse Expr where
 
 -- Adding fromString function since it's exported
 fromString :: String -> Expr
-fromString s = case parse s of
-  Just (expr, "") -> expr
-  Just (expr, rest) -> error ("Unexpected input: " ++ rest)
-  Nothing -> error "Parse error"
+fromString s =
+  case parse s of
+    Just (expr, "")   -> expr
+    Just (expr, rest) -> error ("Unexpected input: " ++ rest)
+    Nothing           -> error "Parse error"

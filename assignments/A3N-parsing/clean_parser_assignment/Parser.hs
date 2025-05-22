@@ -1,30 +1,28 @@
 module Parser
-  ( module CoreParser,
-    T,
-    digit,
-    digitVal,
-    chars,
-    letter,
-    err,
-    lit,
-    number,
-    iter,
-    accept,
-    require,
-    token,
-    spaces,
-    word,
-    (-#),
-    (#-),
-  )
-where
+  ( module CoreParser
+  , T
+  , digit
+  , digitVal
+  , chars
+  , letter
+  , err
+  , lit
+  , number
+  , iter
+  , accept
+  , require
+  , token
+  , spaces
+  , word
+  , (-#)
+  , (#-)
+  ) where
 
-import CoreParser
-import Data.Char
-import Prelude hiding (fail, return)
+import           CoreParser
+import           Data.Char
+import           Prelude    hiding (fail, return)
 
 infixl 7 -#, #-
-
 type T a = Parser a
 
 err :: String -> Parser a
@@ -88,10 +86,7 @@ digitVal :: Parser Integer
 digitVal = digit >-> digitToInt >-> fromIntegral
 
 number' :: Integer -> Parser Integer
-number' n =
-  digitVal
-    #> (\d -> number' (10 * n + d))
-    ! return n
+number' n = digitVal #> (\d -> number' (10 * n + d)) ! return n
 
 number :: Parser Integer
 number = token (digitVal #> number')
