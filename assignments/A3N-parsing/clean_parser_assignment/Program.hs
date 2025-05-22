@@ -1,3 +1,4 @@
+-- Andreas Olsson (an5175ol-s) and Nikolai Vesic Ellman (ni8034ve-s)
 module Program
   ( T
   , parse
