@@ -5,7 +5,7 @@ module TestProgram where
 import           Program
 
 p0, p1, p2, p3, p4, p5 :: Program.T
--- basic program, no comments
+-- p0: write m if m is a multiple of k
 p0 =
   fromString
     ("\
@@ -21,7 +21,8 @@ p0 =
     \    m := m + 1;\
     \  end")
 
--- another simple program. What does it do?
+-- p1 does some thing with bases and numbers
+-- print the base b digits of n in reverse order (I think)
 p1 =
   fromString
     ("\
@@ -41,7 +42,6 @@ p1 =
     \  end\
     \write s;")
 
--- this time just string correspnding to p1
 s1 =
   "\
  \read n;\
@@ -71,11 +71,7 @@ p2 = fromString (toString p0)
 p3 = fromString (toString p1)
 
 -- does execution work as expected?
-rp0 = Program.exec p0 [3, 16]
-
-rp1 = Program.exec p1 [1024, 2]
-
--- this time some comments and exponents
+-- p4 does some other unneccessary things
 s4 =
   "\
  \read a;\
@@ -94,9 +90,8 @@ s4 =
 
 p4 = fromString s4
 
-rp4 = Program.exec p4 [4, 4]
-
 -- more tricky one
+-- p5 calculates the factorial of n
 p5 =
   fromString
     ("\
@@ -121,4 +116,18 @@ p6 = fromString (toString p5)
 
 sp6 = putStr (toString p6)
 
+-- All tests:
+-- Expected [3, 6, 9, 12, 15]
+rp0 = Program.exec p0 [3, 16]
+
+-- Expecteed [0,0,0,0,0,0,0,0,0,0,1,10000000000]
+-- (10 zeros, then a 1, then the value of s)
+-- (which is 1024 in base 2)
+-- this time some comments and exponents
+rp1 = Program.exec p1 [1024, 2]
+
+-- Expected [64, 16, 27, 8, 8, 4, 1, 2, 0]
+rp4 = Program.exec p4 [4, 4]
+
+-- Expected [24]
 rp6 = Program.exec p6 [4]
