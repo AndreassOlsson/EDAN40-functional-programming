@@ -1,6 +1,5 @@
 {- Test for Program -}
--- I dont think this passes right now. Basically exception on all.
--- The Parser Tests are the first ones to fail. Should probable start there.
+-- Seems to be working now!
 module TestProgram where
 
 import           Program
@@ -121,3 +120,5 @@ sp5 = putStr (toString p5)
 p6 = fromString (toString p5)
 
 sp6 = putStr (toString p6)
+
+rp6 = Program.exec p6 [4]

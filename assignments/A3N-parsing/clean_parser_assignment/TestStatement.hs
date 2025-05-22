@@ -1,5 +1,5 @@
 {- Testfor Statement -}
--- Not sure if it passes. A lot of exceptions...
+-- Seems to be working now!
 module TestStatement where
 
 import           Statement
